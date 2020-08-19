@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from tenki_no_ko import LocationScraper
 from tenki_no_ko import Scraper
 
 
@@ -22,3 +23,8 @@ def index_html():
 @pytest.fixture
 def scraper():
     return Scraper()
+
+
+@pytest.fixture
+def location_scraper(mocker):
+    return LocationScraper()
