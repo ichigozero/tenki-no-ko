@@ -25,6 +25,11 @@ def prefecture_html():
     return test_file('prefecture.html').encode('utf-8')
 
 
+@pytest.fixture(scope='module')
+def subprefecture_html():
+    return test_file('subprefecture.html').encode('utf-8')
+
+
 @pytest.fixture
 def scraper():
     return Scraper()
