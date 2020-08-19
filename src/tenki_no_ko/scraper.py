@@ -27,7 +27,7 @@ class Scraper:
 class LocationScraper(Scraper):
     @_ignore_exceptions
     def extract_regions(self):
-        regions = []
+        regions = {}
         soup = self.get_soup('https://tenki.jp')
         th_tags = (
             soup
@@ -36,18 +36,14 @@ class LocationScraper(Scraper):
         )
 
         for th_tag in th_tags:
-            regions.append(
-                {
-                    'id': th_tag.a['href'].split('/')[-2],
-                    'region': th_tag.get_text(strip=True)
-                }
-            )
+            region_id = th_tag.a['href'].split('/')[-2]
+            regions[region_id] = th_tag.get_text(strip=True)
 
         return regions
 
     @_ignore_exceptions
     def extract_prefectures(self, region_id):
-        prefectures = []
+        prefectures = {}
         url = 'https://tenki.jp/forecast/{}/'.format(region_id)
         soup = self.get_soup(url)
         li_tags = (
@@ -59,12 +55,8 @@ class LocationScraper(Scraper):
 
         for li_tag in li_tags:
             a_tag = li_tag.find('a', class_='pref-link')
-            prefectures.append(
-                {
-                    'id': a_tag['href'].split('/')[-2],
-                    'region': a_tag.get_text(strip=True)
-                }
-            )
+            prefecture_id = a_tag['href'].split('/')[-2]
+            prefectures[prefecture_id] = a_tag.get_text(strip=True)
 
         return prefectures
 
