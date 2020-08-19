@@ -60,6 +60,7 @@ class LocationScraper(Scraper):
 
         return prefectures
 
+    @_ignore_exceptions
     def extract_subprefectures_and_cities(self, region_id, prefecture_id):
         output = {}
         url = 'https://tenki.jp/forecast/{}/{}/'.format(
