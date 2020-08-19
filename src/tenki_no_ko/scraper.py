@@ -62,7 +62,10 @@ class LocationScraper(Scraper):
 
     def extract_subprefectures_and_cities(self, region_id, prefecture_id):
         output = {}
-        url = 'https://tenki.jp/forecast/{}/'.format(region_id)
+        url = 'https://tenki.jp/forecast/{}/{}/'.format(
+            region_id,
+            prefecture_id
+        )
         soup = self.get_soup(url)
         h4_tags = (
             soup.
