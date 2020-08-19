@@ -44,3 +44,26 @@ class LocationScraper(Scraper):
             )
 
         return regions
+
+    @_ignore_exceptions
+    def extract_prefectures(self, region_id):
+        prefectures = []
+        url = 'https://tenki.jp/forecast/{}/'.format(region_id)
+        soup = self.get_soup(url)
+        li_tags = (
+            soup
+            .find('table', class_='common-list-entries')
+            .find('tr')
+            .find_all('li')
+        )
+
+        for li_tag in li_tags:
+            a_tag = li_tag.find('a', class_='pref-link')
+            prefectures.append(
+                {
+                    'id': a_tag['href'].split('/')[-2],
+                    'region': a_tag.get_text(strip=True)
+                }
+            )
+
+        return prefectures

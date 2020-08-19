@@ -20,6 +20,11 @@ def index_html():
     return test_file('index.html').encode('utf-8')
 
 
+@pytest.fixture(scope='module')
+def prefecture_html():
+    return test_file('prefecture.html').encode('utf-8')
+
+
 @pytest.fixture
 def scraper():
     return Scraper()
