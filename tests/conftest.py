@@ -4,6 +4,7 @@ import pytest
 
 from tenki_no_ko import LocationScraper
 from tenki_no_ko import Scraper
+from tenki_no_ko import WeatherScraper
 
 
 def test_file(filename):
@@ -30,6 +31,11 @@ def subprefecture_html():
     return test_file('subprefecture.html').encode('utf-8')
 
 
+@pytest.fixture(scope='module')
+def forecast_summary_html():
+    return test_file('forecast_summary.html').encode('utf-8')
+
+
 @pytest.fixture
 def scraper():
     return Scraper()
@@ -38,3 +44,8 @@ def scraper():
 @pytest.fixture
 def location_scraper(mocker):
     return LocationScraper()
+
+
+@pytest.fixture
+def weather_scraper(mocker):
+    return WeatherScraper()

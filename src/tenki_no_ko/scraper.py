@@ -1,4 +1,5 @@
 import functools
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -90,3 +91,66 @@ class LocationScraper(Scraper):
                 }
 
         return output
+
+
+class WeatherScraper(Scraper):
+    @_ignore_exceptions
+    def extract_forecast_summary(self, location_ids):
+        def _extract_forecast_data(section_tag):
+            date = re.search(
+                r'([0-9]+月[0-9]+日\([日|月|火|水|木|金|土]\))',
+                section_tag.h3.get_text(strip=True)
+            ).group(1)
+            weather = (
+                section_tag
+                .find('p', class_='weather-telop')
+                .get_text(strip=True)
+            )
+            highest_temperature = '{} {}'.format(
+                (
+                    section_tag
+                    .find('dd', class_='high-temp temp')
+                    .get_text(strip=True)
+                ),
+                (
+                    section_tag
+                    .find('dd', class_='high-temp tempdiff')
+                    .get_text(strip=True)
+                ),
+            )
+            lowest_temperature = '{} {}'.format(
+                (
+                    section_tag
+                    .find('dd', class_='low-temp temp')
+                    .get_text(strip=True)
+                ),
+                (
+                    section_tag
+                    .find('dd', class_='low-temp tempdiff')
+                    .get_text(strip=True)
+                ),
+            )
+
+            return {
+                'date': date,
+                'weather': weather,
+                'temps': {
+                    'high': highest_temperature,
+                    'low': lowest_temperature
+                },
+            }
+
+        url = 'https://tenki.jp/forecast/{}/{}/{}/{}/'.format(
+            location_ids['region_id'],
+            location_ids['prefecture_id'],
+            location_ids['subprefecture_id'],
+            location_ids['city_id']
+        )
+        soup = self.get_soup(url)
+        today_section = soup.find('section', class_='today-weather')
+        tomorrow_section = soup.find('section', class_='tomorrow-weather')
+
+        return {
+            'today': _extract_forecast_data(today_section),
+            'tomorrow': _extract_forecast_data(tomorrow_section)
+        }
