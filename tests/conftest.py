@@ -36,6 +36,11 @@ def forecast_summary_html():
     return test_file('forecast_summary.html').encode('utf-8')
 
 
+@pytest.fixture(scope='module')
+def three_hourly_forecast_html():
+    return test_file('3_hourly_forecast.html').encode('utf-8')
+
+
 @pytest.fixture
 def scraper():
     return Scraper()

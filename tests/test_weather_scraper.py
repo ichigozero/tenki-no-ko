@@ -40,3 +40,92 @@ def test_extract_forecast_summary(
             },
         }
     }
+
+
+def test_extract_3_hourly_forecasts(
+    mocker,
+    three_hourly_forecast_html,
+    weather_scraper
+):
+    mock_get_soup = mocker.patch.object(
+        target=weather_scraper,
+        attribute='get_soup',
+        return_value=BeautifulSoup(three_hourly_forecast_html, 'html.parser')
+    )
+    location_ids = {
+        'region_id': '3',
+        'prefecture_id': '16',
+        'subprefecture_id': '4410',
+        'city_id': '13101'
+    }
+    output = weather_scraper.extract_3_hourly_forecasts(location_ids)
+
+    mock_get_soup.assert_called_once_with(
+        'https://tenki.jp/forecast/3/16/4410/13101/3hours.html'
+    )
+    assert output == {
+        'today': [
+            {'hour': '03', 'weather': '晴れ', 'temp': '28.0'},
+            {'hour': '06', 'weather': '晴れ', 'temp': '28.0'},
+            {'hour': '09', 'weather': '晴れ', 'temp': '31.5'},
+            {'hour': '12', 'weather': '晴れ', 'temp': '34.7'},
+            {'hour': '15', 'weather': '晴れ', 'temp': '34.8'},
+            {'hour': '18', 'weather': '晴れ', 'temp': '30.6'},
+            {'hour': '21', 'weather': '晴れ', 'temp': '28.1'},
+            {'hour': '24', 'weather': '晴れ', 'temp': '27.3'},
+        ],
+        'tomorrow': [
+            {'hour': '03', 'weather': '晴れ', 'temp': '28.0'},
+            {'hour': '06', 'weather': '晴れ', 'temp': '28.0'},
+            {'hour': '09', 'weather': '晴れ', 'temp': '31.5'},
+            {'hour': '12', 'weather': '晴れ', 'temp': '34.7'},
+            {'hour': '15', 'weather': '晴れ', 'temp': '34.8'},
+            {'hour': '18', 'weather': '晴れ', 'temp': '30.6'},
+            {'hour': '21', 'weather': '晴れ', 'temp': '28.1'},
+            {'hour': '24', 'weather': '晴れ', 'temp': '27.3'},
+        ]
+    }
+
+
+def test_failed_to_extract_3_hourly_forecasts(
+    mocker,
+    weather_scraper
+):
+    mock_get_soup = mocker.patch.object(
+        target=weather_scraper,
+        attribute='get_soup',
+        return_value=None
+    )
+    location_ids = {
+        'region_id': '3',
+        'prefecture_id': '16',
+        'subprefecture_id': '4410',
+        'city_id': '13101'
+    }
+    output = weather_scraper.extract_3_hourly_forecasts(location_ids)
+
+    mock_get_soup.assert_called_once_with(
+        'https://tenki.jp/forecast/3/16/4410/13101/3hours.html'
+    )
+    assert output == {
+        'today': [
+            {'hour': '03', 'weather': '', 'temp': ''},
+            {'hour': '06', 'weather': '', 'temp': ''},
+            {'hour': '09', 'weather': '', 'temp': ''},
+            {'hour': '12', 'weather': '', 'temp': ''},
+            {'hour': '15', 'weather': '', 'temp': ''},
+            {'hour': '18', 'weather': '', 'temp': ''},
+            {'hour': '21', 'weather': '', 'temp': ''},
+            {'hour': '24', 'weather': '', 'temp': ''},
+        ],
+        'tomorrow': [
+            {'hour': '03', 'weather': '', 'temp': ''},
+            {'hour': '06', 'weather': '', 'temp': ''},
+            {'hour': '09', 'weather': '', 'temp': ''},
+            {'hour': '12', 'weather': '', 'temp': ''},
+            {'hour': '15', 'weather': '', 'temp': ''},
+            {'hour': '18', 'weather': '', 'temp': ''},
+            {'hour': '21', 'weather': '', 'temp': ''},
+            {'hour': '24', 'weather': '', 'temp': ''},
+        ]
+    }
