@@ -1,3 +1,4 @@
+import datetime
 import functools
 import re
 
@@ -219,3 +220,17 @@ class WeatherScraper(Scraper):
                 table_id='forecast-point-3h-tomorrow'
             )
         }
+
+    def extract_3_hourly_forecasts_for_next_24_hours(self, location_ids):
+        INTERVAL = 3
+        raw_forecasts = self.extract_3_hourly_forecasts(location_ids)
+
+        sequence = int(datetime.datetime.now().hour / INTERVAL)
+        today_forecasts = raw_forecasts['today']
+        tomorrow_forecasts = raw_forecasts['tomorrow']
+
+        forecasts = []
+        forecasts.extend(today_forecasts[sequence:])
+        forecasts.extend(tomorrow_forecasts[:sequence])
+
+        return forecasts

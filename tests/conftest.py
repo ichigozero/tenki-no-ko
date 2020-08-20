@@ -1,4 +1,5 @@
 import os
+import datetime
 
 import pytest
 
@@ -14,6 +15,16 @@ def test_file(filename):
     )
     with open(os.path.join(path, filename), 'r') as f:
         return f.read()
+
+
+@pytest.fixture
+def datetime_now_patch(monkeypatch):
+    class MockDateTime(datetime.datetime):
+        @classmethod
+        def now(*args, **kwargs):
+            return datetime.datetime(2020, 2, 29, 10, 0, 0)
+
+    monkeypatch.setattr(datetime, 'datetime', MockDateTime)
 
 
 @pytest.fixture(scope='module')
