@@ -1,4 +1,6 @@
+import datetime
 import functools
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -90,3 +92,145 @@ class LocationScraper(Scraper):
                 }
 
         return output
+
+
+class WeatherScraper(Scraper):
+    @_ignore_exceptions
+    def extract_forecast_summary(self, location_ids):
+        def _extract_forecast_data(section_tag):
+            date = re.search(
+                r'([0-9]+月[0-9]+日\([日|月|火|水|木|金|土]\))',
+                section_tag.h3.get_text(strip=True)
+            ).group(1)
+            weather = (
+                section_tag
+                .find('p', class_='weather-telop')
+                .get_text(strip=True)
+            )
+            highest_temperature = '{} {}'.format(
+                (
+                    section_tag
+                    .find('dd', class_='high-temp temp')
+                    .get_text(strip=True)
+                ),
+                (
+                    section_tag
+                    .find('dd', class_='high-temp tempdiff')
+                    .get_text(strip=True)
+                ),
+            )
+            lowest_temperature = '{} {}'.format(
+                (
+                    section_tag
+                    .find('dd', class_='low-temp temp')
+                    .get_text(strip=True)
+                ),
+                (
+                    section_tag
+                    .find('dd', class_='low-temp tempdiff')
+                    .get_text(strip=True)
+                ),
+            )
+
+            return {
+                'date': date,
+                'weather': weather,
+                'temps': {
+                    'high': highest_temperature,
+                    'low': lowest_temperature
+                },
+            }
+
+        url = 'https://tenki.jp/forecast/{}/{}/{}/{}/'.format(
+            location_ids['region_id'],
+            location_ids['prefecture_id'],
+            location_ids['subprefecture_id'],
+            location_ids['city_id']
+        )
+        soup = self.get_soup(url)
+        today_section = soup.find('section', class_='today-weather')
+        tomorrow_section = soup.find('section', class_='tomorrow-weather')
+
+        return {
+            'today': _extract_forecast_data(today_section),
+            'tomorrow': _extract_forecast_data(tomorrow_section)
+        }
+
+    def extract_3_hourly_forecasts(self, location_ids):
+        def _extract_forecast_data(soup, table_id):
+            forecasts = []
+
+            try:
+                table = soup.find('table', id='forecast-point-3h-today')
+                hours = (
+                    table
+                    .find('tr', class_='hour')
+                    .find_all('td')
+                )
+                weathers = (
+                    table
+                    .find('tr', class_='weather')
+                    .find_all('td')
+                )
+                temperatures = (
+                    table
+                    .find('tr', class_='temperature')
+                    .find_all('td')
+                )
+
+                for index, hour in enumerate(hours):
+                    forecasts.append({
+                        'hour': hours[index].get_text(strip=True),
+                        'weather': weathers[index].get_text(strip=True),
+                        'temp': temperatures[index].get_text(strip=True),
+                    })
+            except AttributeError:
+                START_HOUR = 3
+                HOURS_IN_A_DAY = 24
+                INTERVAL = 3
+
+                for hour in range(
+                        START_HOUR,
+                        HOURS_IN_A_DAY + INTERVAL,
+                        INTERVAL
+                ):
+                    forecasts.append({
+                        'hour': str(hour).zfill(2),
+                        'weather': '',
+                        'temp': '',
+                    })
+
+            return forecasts
+
+        url = 'https://tenki.jp/forecast/{}/{}/{}/{}/3hours.html'.format(
+            location_ids['region_id'],
+            location_ids['prefecture_id'],
+            location_ids['subprefecture_id'],
+            location_ids['city_id']
+        )
+        soup = self.get_soup(url)
+
+        return {
+            'today': _extract_forecast_data(
+                soup=soup,
+                table_id='forecast-point-3h-today'
+            ),
+            'tomorrow': _extract_forecast_data(
+                soup=soup,
+                table_id='forecast-point-3h-tomorrow'
+            )
+        }
+
+    def extract_3_hourly_forecasts_for_next_24_hours(self, location_ids):
+        INTERVAL = 3
+        raw_forecasts = self.extract_3_hourly_forecasts(location_ids)
+
+        sequence = int(datetime.datetime.now().hour / INTERVAL)
+        today_forecasts = raw_forecasts['today']
+        tomorrow_forecasts = raw_forecasts['tomorrow']
+
+        forecasts = []
+        forecasts.extend(today_forecasts[sequence:])
+        forecasts.extend(tomorrow_forecasts[:sequence])
+
+        return forecasts
