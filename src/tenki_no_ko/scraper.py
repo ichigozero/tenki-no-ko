@@ -1,3 +1,4 @@
+import copy
 import datetime
 import functools
 import re
@@ -148,12 +149,31 @@ class WeatherScraper(Scraper):
             location_ids['city_id']
         )
         soup = self.get_soup(url)
+
+        h2_tag = soup.find('section', class_='section-wrap').h2
+        update_datetime = (
+            h2_tag
+            .find('time', class_='date-time')
+            .get_text(strip=True)
+            .replace('発表', '')
+        )
+
+        # Prevent the original tree from being modified
+        # when calling extract() method
+        h2_tag_copy = copy.copy(h2_tag)
+        h2_tag_copy.time.extract()
+        city = h2_tag_copy.get_text(strip=True).replace('の天気', '')
+
         today_section = soup.find('section', class_='today-weather')
         tomorrow_section = soup.find('section', class_='tomorrow-weather')
 
         return {
-            'today': _extract_forecast_data(today_section),
-            'tomorrow': _extract_forecast_data(tomorrow_section)
+            'city': city,
+            'update_datetime': update_datetime,
+            'forecasts': {
+                'today': _extract_forecast_data(today_section),
+                'tomorrow': _extract_forecast_data(tomorrow_section)
+            }
         }
 
     def extract_3_hourly_forecasts(self, location_ids):

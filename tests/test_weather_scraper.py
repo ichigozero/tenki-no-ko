@@ -23,22 +23,26 @@ def test_extract_forecast_summary(
         'https://tenki.jp/forecast/3/16/4410/13101/'
     )
     assert output == {
-        'today': {
-            'date': '08月20日(木)',
-            'weather': '晴',
-            'temps': {
-                'high': '35℃ [+1]',
-                'low': '28℃ [+1]',
+        'city': '千代田区',
+        'update_datetime': '20日06:00',
+        'forecasts': {
+            'today': {
+                'date': '08月20日(木)',
+                'weather': '晴',
+                'temps': {
+                    'high': '35℃ [+1]',
+                    'low': '28℃ [+1]',
+                },
             },
+            'tomorrow': {
+                'date': '08月21日(金)',
+                'weather': '晴',
+                'temps': {
+                    'high':  '35℃ [0]',
+                    'low': '25℃ [-2]',
+                },
+            }
         },
-        'tomorrow': {
-            'date': '08月21日(金)',
-            'weather': '晴',
-            'temps': {
-                'high':  '35℃ [0]',
-                'low': '25℃ [-2]',
-            },
-        }
     }
 
 
