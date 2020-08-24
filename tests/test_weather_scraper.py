@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 def test_extract_forecast_summary(
         mocker,
         forecast_summary_html,
+        location_ids,
         weather_scraper
 ):
     mock_get_soup = mocker.patch.object(
@@ -11,12 +12,6 @@ def test_extract_forecast_summary(
         attribute='get_soup',
         return_value=BeautifulSoup(forecast_summary_html, 'html.parser')
     )
-    location_ids = {
-        'region_id': '3',
-        'prefecture_id': '16',
-        'subprefecture_id': '4410',
-        'city_id': '13101'
-    }
     output = weather_scraper.extract_forecast_summary(location_ids)
 
     mock_get_soup.assert_called_once_with(
@@ -40,6 +35,82 @@ def test_extract_forecast_summary(
                 'temps': {
                     'high':  '35℃ [0]',
                     'low': '25℃ [-2]',
+                },
+            }
+        },
+    }
+
+
+def test_failed_to_extract_forecast_summary(
+        mocker,
+        forecast_summary_html,
+        location_ids,
+        weather_scraper
+):
+    mock_get_soup = mocker.patch.object(
+        target=weather_scraper,
+        attribute='get_soup',
+        return_value=None
+    )
+    output = weather_scraper.extract_forecast_summary(location_ids)
+
+    mock_get_soup.assert_called_once_with(
+        'https://tenki.jp/forecast/3/16/4410/13101/'
+    )
+    assert output == {
+        'city': '',
+        'update_datetime': '',
+        'forecasts': {
+            'today': {
+                'date': '',
+                'weather': '',
+                'temps': {
+                    'high': '',
+                    'low': '',
+                },
+            },
+            'tomorrow': {
+                'date': '',
+                'weather': '',
+                'temps': {
+                    'high':  '',
+                    'low': '',
+                },
+            }
+        },
+    }
+
+
+def test_extract_forecast_summary_with_unknown_location_ids(
+        mocker,
+        forecast_summary_html,
+        weather_scraper
+):
+    mock_get_soup = mocker.patch.object(
+        target=weather_scraper,
+        attribute='get_soup',
+    )
+    output = weather_scraper.extract_forecast_summary(location_ids=None)
+
+    assert mock_get_soup.call_count == 0
+    assert output == {
+        'city': '',
+        'update_datetime': '',
+        'forecasts': {
+            'today': {
+                'date': '',
+                'weather': '',
+                'temps': {
+                    'high': '',
+                    'low': '',
+                },
+            },
+            'tomorrow': {
+                'date': '',
+                'weather': '',
+                'temps': {
+                    'high':  '',
+                    'low': '',
                 },
             }
         },
@@ -111,6 +182,41 @@ def test_failed_to_extract_3_hourly_forecasts(
     mock_get_soup.assert_called_once_with(
         'https://tenki.jp/forecast/3/16/4410/13101/3hours.html'
     )
+    assert output == {
+        'today': [
+            {'hour': '03', 'weather': '', 'temp': ''},
+            {'hour': '06', 'weather': '', 'temp': ''},
+            {'hour': '09', 'weather': '', 'temp': ''},
+            {'hour': '12', 'weather': '', 'temp': ''},
+            {'hour': '15', 'weather': '', 'temp': ''},
+            {'hour': '18', 'weather': '', 'temp': ''},
+            {'hour': '21', 'weather': '', 'temp': ''},
+            {'hour': '24', 'weather': '', 'temp': ''},
+        ],
+        'tomorrow': [
+            {'hour': '03', 'weather': '', 'temp': ''},
+            {'hour': '06', 'weather': '', 'temp': ''},
+            {'hour': '09', 'weather': '', 'temp': ''},
+            {'hour': '12', 'weather': '', 'temp': ''},
+            {'hour': '15', 'weather': '', 'temp': ''},
+            {'hour': '18', 'weather': '', 'temp': ''},
+            {'hour': '21', 'weather': '', 'temp': ''},
+            {'hour': '24', 'weather': '', 'temp': ''},
+        ]
+    }
+
+
+def test_extract_3_hourly_forecasts_with_unknown_location_ids(
+    mocker,
+    weather_scraper
+):
+    mock_get_soup = mocker.patch.object(
+        target=weather_scraper,
+        attribute='get_soup',
+    )
+    output = weather_scraper.extract_3_hourly_forecasts(location_ids=None)
+
+    mock_get_soup.call_count == 0
     assert output == {
         'today': [
             {'hour': '03', 'weather': '', 'temp': ''},

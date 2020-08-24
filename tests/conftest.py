@@ -52,6 +52,16 @@ def three_hourly_forecast_html():
     return test_file('3_hourly_forecast.html').encode('utf-8')
 
 
+@pytest.fixture(scope='module')
+def location_ids():
+    return {
+        'region_id': '3',
+        'prefecture_id': '16',
+        'subprefecture_id': '4410',
+        'city_id': '13101'
+    }
+
+
 @pytest.fixture
 def scraper():
     return Scraper()

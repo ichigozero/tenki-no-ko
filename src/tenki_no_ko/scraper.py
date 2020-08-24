@@ -96,76 +96,96 @@ class LocationScraper(Scraper):
 
 
 class WeatherScraper(Scraper):
-    @_ignore_exceptions
     def extract_forecast_summary(self, location_ids):
         def _extract_forecast_data(section_tag):
-            date = re.search(
-                r'([0-9]+月[0-9]+日\([日|月|火|水|木|金|土]\))',
-                section_tag.h3.get_text(strip=True)
-            ).group(1)
-            weather = (
-                section_tag
-                .find('p', class_='weather-telop')
+            try:
+                date = re.search(
+                    r'([0-9]+月[0-9]+日\([日|月|火|水|木|金|土]\))',
+                    section_tag.h3.get_text(strip=True)
+                ).group(1)
+                weather = (
+                    section_tag
+                    .find('p', class_='weather-telop')
+                    .get_text(strip=True)
+                )
+                highest_temperature = '{} {}'.format(
+                    (
+                        section_tag
+                        .find('dd', class_='high-temp temp')
+                        .get_text(strip=True)
+                    ),
+                    (
+                        section_tag
+                        .find('dd', class_='high-temp tempdiff')
+                        .get_text(strip=True)
+                    ),
+                )
+                lowest_temperature = '{} {}'.format(
+                    (
+                        section_tag
+                        .find('dd', class_='low-temp temp')
+                        .get_text(strip=True)
+                    ),
+                    (
+                        section_tag
+                        .find('dd', class_='low-temp tempdiff')
+                        .get_text(strip=True)
+                    ),
+                )
+
+                return {
+                    'date': date,
+                    'weather': weather,
+                    'temps': {
+                        'high': highest_temperature,
+                        'low': lowest_temperature
+                    },
+                }
+            except AttributeError:
+                return {
+                    'date': '',
+                    'weather': '',
+                    'temps': {
+                        'high': '',
+                        'low': ''
+                    },
+                }
+
+        try:
+            url = (
+                'https://tenki.jp/forecast/'
+                '{region_id}/{prefecture_id}/'
+                '{subprefecture_id}/{city_id}/'
+            ).format(
+                region_id=location_ids.get('region_id'),
+                prefecture_id=location_ids.get('prefecture_id'),
+                subprefecture_id=location_ids.get('subprefecture_id'),
+                city_id=location_ids.get('city_id')
+            )
+
+            soup = self.get_soup(url)
+
+            h2_tag = soup.find('section', class_='section-wrap').h2
+            update_datetime = (
+                h2_tag
+                .find('time', class_='date-time')
                 .get_text(strip=True)
-            )
-            highest_temperature = '{} {}'.format(
-                (
-                    section_tag
-                    .find('dd', class_='high-temp temp')
-                    .get_text(strip=True)
-                ),
-                (
-                    section_tag
-                    .find('dd', class_='high-temp tempdiff')
-                    .get_text(strip=True)
-                ),
-            )
-            lowest_temperature = '{} {}'.format(
-                (
-                    section_tag
-                    .find('dd', class_='low-temp temp')
-                    .get_text(strip=True)
-                ),
-                (
-                    section_tag
-                    .find('dd', class_='low-temp tempdiff')
-                    .get_text(strip=True)
-                ),
+                .replace('発表', '')
             )
 
-            return {
-                'date': date,
-                'weather': weather,
-                'temps': {
-                    'high': highest_temperature,
-                    'low': lowest_temperature
-                },
-            }
+            # Prevent the original tree from being modified
+            # when calling extract() method
+            h2_tag_copy = copy.copy(h2_tag)
+            h2_tag_copy.time.extract()
+            city = h2_tag_copy.get_text(strip=True).replace('の天気', '')
 
-        url = 'https://tenki.jp/forecast/{}/{}/{}/{}/'.format(
-            location_ids['region_id'],
-            location_ids['prefecture_id'],
-            location_ids['subprefecture_id'],
-            location_ids['city_id']
-        )
-        soup = self.get_soup(url)
-
-        h2_tag = soup.find('section', class_='section-wrap').h2
-        update_datetime = (
-            h2_tag
-            .find('time', class_='date-time')
-            .get_text(strip=True)
-            .replace('発表', '')
-        )
-
-        # Prevent the original tree from being modified
-        # when calling extract() method
-        h2_tag_copy = copy.copy(h2_tag)
-        h2_tag_copy.time.extract()
-        city = h2_tag_copy.get_text(strip=True).replace('の天気', '')
-
-        today_section = soup.find('section', class_='today-weather')
-        tomorrow_section = soup.find('section', class_='tomorrow-weather')
+            today_section = soup.find('section', class_='today-weather')
+            tomorrow_section = soup.find('section', class_='tomorrow-weather')
+        except AttributeError:
+            city = ''
+            update_datetime = ''
+            today_section = None
+            tomorrow_section = None
 
         return {
             'city': city,
@@ -222,13 +242,21 @@ class WeatherScraper(Scraper):
 
             return forecasts
 
-        url = 'https://tenki.jp/forecast/{}/{}/{}/{}/3hours.html'.format(
-            location_ids['region_id'],
-            location_ids['prefecture_id'],
-            location_ids['subprefecture_id'],
-            location_ids['city_id']
-        )
-        soup = self.get_soup(url)
+        try:
+            url = (
+                'https://tenki.jp/forecast/'
+                '{region_id}/{prefecture_id}/'
+                '{subprefecture_id}/{city_id}/'
+                '3hours.html'
+            ).format(
+                region_id=location_ids.get('region_id'),
+                prefecture_id=location_ids.get('prefecture_id'),
+                subprefecture_id=location_ids.get('subprefecture_id'),
+                city_id=location_ids.get('city_id')
+            )
+            soup = self.get_soup(url)
+        except AttributeError:
+            soup = None
 
         return {
             'today': _extract_forecast_data(
